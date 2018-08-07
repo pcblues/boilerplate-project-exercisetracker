@@ -1,4 +1,5 @@
-
+// run with node-foreman
+// nf run npm start
 
 const express = require('express')
 const app = express()

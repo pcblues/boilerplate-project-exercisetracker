@@ -9,6 +9,30 @@ const cors = require('cors')
 
 const mongoose = require('mongoose')
 mongoose.connect(process.env.MLAB_URI || 'mongodb://localhost/exercise-track' )
+var db=mongoose.connection
+mongoose.Promise=global.Promise
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+
+// set up schema and model
+var Schema = mongoose.Schema
+
+var ExModelSchema = new Schema({
+  userId: {type:String,required:true},
+  description:{type:String,required:true},
+  duration:{type:Number,required:true},
+  date:Date
+})
+
+var UserModelSchema = new Schema({
+  username: {type:String, required:true}
+})
+
+var ExModel = mongoose.model('ExModel',ExModelSchema)
+var UserModel=mongoose.model('UserModel',UserModelSchema)
+
+function handleError(err) {
+  console.log(err)
+}
 
 app.use(cors())
 
@@ -20,6 +44,86 @@ app.use(express.static('public'))
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html')
 });
+
+
+// three routes
+// new user
+app.route('/api/exercise/new-user')
+  .post(function(req,res){
+  var user = req.body.username
+// check if exists
+UserModel.find({'username':user},function(err,users)
+  {
+  if (users.length>0) {
+    res.send('username already taken')
+  }   
+  else 
+  {
+    var user_instance = new UserModel({username:user})
+    user_instance.save(function(err) {
+      if(err) return handleError(err)
+    })
+    
+    res.send(user_instance)
+    
+  }
+  })  
+})
+  
+app.route('/api/exercise/add')
+  .post(function(req,res){
+    var userId=req.body.userId
+    var duration = req.body.duration
+    var date = req.body.date
+    var description = req.body.description
+    var ex_instance= new ExModel({userId:userId,duration:duration,date:date,description:description})
+    ex_instance.save(function(err) {
+      if(err) {
+        res.send('error saving')
+        return handleError(err)}
+       else{
+        res.send(ex_instance)
+
+      }
+    })
+    
+    
+})
+
+app.route('/api/exercise/log')
+  .get(function(req,res){
+  var userId=req.param.userId
+  var from =req.param.from
+  var to = req.param.to
+  var limit=req.param.limit
+  /*
+  GET users's exercise log: GET /api/exercise/log?{userId}[&from][&to][&limit]
+  { } = required, [ ] = optional
+  from, to = dates (yyyy-mm-dd); limit = number
+  */
+
+  // check parameters and use in query
+  if (from!=null) {
+
+  }
+  if (to!=null){
+
+  }
+  if (limit!=null) {
+    
+  } 
+  ExModel.find({'userId':userId},function(err,records)
+  {
+  if (records.length===0) {
+    res.send('no records')
+  }   
+  else 
+  {
+    res.send(records)
+  }}
+ )  
+})
+
 
 
 // Not found middleware
@@ -46,31 +150,6 @@ app.use((err, req, res, next) => {
     .send(errMessage)
 })
 
-// three routes
-// new user
-app.route('/api/exercise/new-user')
-  .post(function(req,res){
-// check if exists
-  
-// add
-  
-})
-  
-app.route('/api/exercise/add')
-  .post(function(req,res){
-
-})
-
-app.route('/api/exercise/log')
-  .get(function(req,res){
-  var log=[]
-/*
-GET users's exercise log: GET /api/exercise/log?{userId}[&from][&to][&limit]
-{ } = required, [ ] = optional
-from, to = dates (yyyy-mm-dd); limit = number
-*/
-  res.send(log)
-})
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)

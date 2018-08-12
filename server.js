@@ -92,36 +92,40 @@ app.route('/api/exercise/add')
 
 app.route('/api/exercise/log')
   .get(function(req,res){
-  var userId=req.param.userId
-  var from =req.param.from
-  var to = req.param.to
-  var limit=req.param.limit
+  var userId=req.query.userId
+  var from =req.query.from
+  var to = req.query.to
+  var limit=parseInt( req.query.limit)
   /*
   GET users's exercise log: GET /api/exercise/log?{userId}[&from][&to][&limit]
   { } = required, [ ] = optional
   from, to = dates (yyyy-mm-dd); limit = number
   */
-
+  
+  var conditions={'userId':userId}
   // check parameters and use in query
   if (from!=null) {
-
+    conditions['date']={$gt:from}
   }
   if (to!=null){
-
+    conditions['date']={$lt:to}
   }
-  if (limit!=null) {
-    
+  if (limit===null) {
+    limit=0
   } 
-  ExModel.find({'userId':userId},function(err,records)
+
+  var results = ExModel.find(conditions,function(err,records)
   {
-  if (records.length===0) {
+  if (records===undefined) {
     res.send('no records')
   }   
-  else 
+  else if (records.length===0) {
+    res.send('no records')
+  } else
   {
     res.send(records)
   }}
- )  
+ ).limit(limit)  
 })
 
 
